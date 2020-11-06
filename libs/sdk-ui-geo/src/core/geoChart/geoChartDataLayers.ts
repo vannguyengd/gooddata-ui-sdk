@@ -17,6 +17,8 @@ import {
     PUSHPIN_STYLE_CIRCLE_STROKE_COLOR,
     EMPTY_SEGMENT_VALUE,
     PUSHPIN_SIZE_OPTIONS_MAP,
+    DEFAULT_CHOROPLETH_LAYER_NAME,
+    DEFAULT_CHOROPLETH_LAYER_BORDER,
 } from "./constants/geoChart";
 import { IGeoData, IGeoPointsConfig, IGeoConfig } from "../../GeoChart";
 import { BucketNames } from "@gooddata/sdk-ui";
@@ -154,6 +156,53 @@ export function createUnclusterPoints(dataSourceName: string): mapboxgl.Layer {
             [PUSHPIN_STYLE_CIRCLE_COLOR]: createPushpinColorOptions(),
             [PUSHPIN_STYLE_CIRCLE_STROKE_COLOR]: DEFAULT_PUSHPIN_BORDER_COLOR_VALUE,
             [PUSHPIN_STYLE_CIRCLE_SIZE]: PUSHPIN_SIZE_OPTIONS_MAP.min.default / 2,
+        },
+    };
+}
+
+export function createChoroplethLayer(dataSourceName: string, attrName: string): mapboxgl.Layer {
+    return {
+        id: DEFAULT_CHOROPLETH_LAYER_NAME,
+        type: "fill",
+        source: dataSourceName,
+        paint: {
+            "fill-color": [
+                "interpolate",
+                ["linear"],
+                ["get", attrName],
+                0,
+                "#F5F502",
+                20000,
+                "#F5CC01",
+                50000,
+                "#F5A301",
+                100000,
+                "#F57A02",
+                200000,
+                "#F55100",
+                500000,
+                "#F52900",
+                700000,
+                "#F50900",
+                1000000,
+                "#FF0000",
+                5000000,
+                "#BD0426",
+            ],
+            "fill-opacity": 0.75,
+        },
+    };
+}
+
+export function createChoroplethBorderLayer(dataSourceName: string): mapboxgl.Layer {
+    return {
+        id: DEFAULT_CHOROPLETH_LAYER_BORDER,
+        type: "line",
+        source: dataSourceName,
+        layout: {},
+        paint: {
+            "line-color": "#ffffff",
+            "line-width": 1,
         },
     };
 }

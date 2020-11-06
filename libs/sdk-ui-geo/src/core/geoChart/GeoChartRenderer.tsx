@@ -12,9 +12,17 @@ import {
     createPushpinDataLayer,
     createUnclusterPoints,
     createPushpinFilter,
+    createChoroplethLayer,
+    createChoroplethBorderLayer,
 } from "./geoChartDataLayers";
-import { createPushpinDataSource, IGeoDataSourceProps } from "./geoChartDataSource";
 import {
+    createChoroplethDataSource,
+    createPushpinDataSource,
+    IGeoDataSourceProps,
+} from "./geoChartDataSource";
+import {
+    DEFAULT_CHOROPLETH_LAYER_NAME,
+    DEFAULT_CHOROPLETH_MAP,
     DEFAULT_CLUSTER_LABELS_CONFIG,
     DEFAULT_CLUSTER_LAYER_NAME,
     DEFAULT_DATA_SOURCE_NAME,
@@ -40,6 +48,7 @@ import { IDataView } from "@gooddata/sdk-backend-spi";
 import { handleGeoPushpinDrillEvent } from "./helpers/geoChart/drilling";
 
 import { WrappedComponentProps } from "react-intl";
+import { countriesData } from "./constants/countries";
 
 /**
  * @internal
@@ -66,6 +75,8 @@ class GeoChartRenderer extends React.Component<IGeoChartRendererProps> {
         onCenterPositionChanged: noop,
     };
 
+    private countriesGeo: any;
+
     private chart: mapboxgl.Map | undefined;
     private tooltip: mapboxgl.Popup | undefined;
     private navigationControlButton: mapboxgl.NavigationControl | null;
@@ -78,6 +89,7 @@ class GeoChartRenderer extends React.Component<IGeoChartRendererProps> {
         mapboxgl.accessToken = props.config.mapboxToken;
         this.navigationControlButton = null;
         this.chartRef = null;
+        this.countriesGeo = null;
     }
 
     public componentDidUpdate(prevProps: IGeoChartRendererProps): void {
@@ -116,10 +128,36 @@ class GeoChartRenderer extends React.Component<IGeoChartRendererProps> {
     }
 
     public componentDidMount(): void {
+        const {
+            config: { isChoroplethMap },
+        } = this.props;
+
         this.createTooltip();
         this.createMap();
         this.createMapControls();
-        this.handleMapEvent();
+        if (isChoroplethMap) {
+            fetch("https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson")
+                .then((response) => response.json())
+                .then((data) => {
+                    const featuresObj = data.features.map((feature: any) => {
+                        const country = countriesData.find((c) => c.ADMIN === feature.properties.ADMIN);
+                        return {
+                            ...feature,
+                            properties: {
+                                ...feature.properties,
+                                case: country ? country.case : 0,
+                            },
+                        };
+                    });
+                    this.countriesGeo = {
+                        ...data,
+                        features: [...featuresObj],
+                    };
+                    this.handleChoroplethMapEvent();
+                });
+        } else {
+            this.handleMapEvent();
+        }
     }
 
     public componentWillUnmount(): void {
@@ -171,8 +209,16 @@ class GeoChartRenderer extends React.Component<IGeoChartRendererProps> {
     };
 
     private resetMap = (): void => {
+        const {
+            config: { isChoroplethMap },
+        } = this.props;
         this.cleanupMap();
-        this.setupMap();
+        if (isChoroplethMap) {
+            this.setupChoroplethMap();
+            this.handleChoroplethMapEvent();
+        } else {
+            this.setupMap();
+        }
     };
 
     private shouldResetMap = (prevConfig: IGeoConfig, prevColorStrategy: IColorStrategy): boolean => {
@@ -188,6 +234,10 @@ class GeoChartRenderer extends React.Component<IGeoChartRendererProps> {
                 colorStrategy.getColorAssignment(),
             )
         ) {
+            return true;
+        }
+
+        if (config.isChoroplethMap !== prevConfig.isChoroplethMap) {
             return true;
         }
 
@@ -303,6 +353,23 @@ class GeoChartRenderer extends React.Component<IGeoChartRendererProps> {
         chart.on("zoomend", this.handlePushpinZoomEnd);
     };
 
+    private handleChoroplethMapEvent = () => {
+        const { chart } = this;
+
+        if (!chart) {
+            throw new InvariantError("illegal state - setting map event handlers while map not initialized");
+        }
+
+        chart.on("click", DEFAULT_CHOROPLETH_LAYER_NAME, this.handleMapClick);
+        chart.on("idle", this.handleMapIdle);
+        chart.on("load", this.setupChoroplethMap);
+        chart.on("load", this.adjustChartHeight);
+        chart.on("mousemove", DEFAULT_CHOROPLETH_LAYER_NAME, this.handlePushpinMouseEnter);
+        chart.on("mouseleave", DEFAULT_CHOROPLETH_LAYER_NAME, this.handlePushpinMouseLeave);
+        chart.on("moveend", this.handlePushpinMoveEnd);
+        chart.on("zoomend", this.handlePushpinZoomEnd);
+    };
+
     /*
     Fired after the last frame rendered before the map enters an "idle" state:
         - No camera transitions are in progress
@@ -368,6 +435,27 @@ class GeoChartRenderer extends React.Component<IGeoChartRendererProps> {
         chart.on("data", handleLayerLoaded);
     };
 
+    private setupChoroplethMap = (): void => {
+        const { chart, handleLayerLoaded } = this;
+
+        if (!chart || !this.countriesGeo) {
+            throw new InvariantError("illegal state - setting up map but with no existing map instance");
+        }
+
+        /*const dataSourceProps: IGeoDataSourceProps = {
+            colorStrategy,
+            config,
+            geoData,
+            hasClustering,
+        };*/
+        chart.addSource(DEFAULT_CHOROPLETH_MAP, createChoroplethDataSource(this.countriesGeo));
+        chart.addLayer(createChoroplethLayer(DEFAULT_CHOROPLETH_MAP, "case"), "waterway-label");
+        chart.addLayer(createChoroplethBorderLayer(DEFAULT_CHOROPLETH_MAP));
+
+        // keep listening to the data event until the style is loaded
+        chart.on("data", handleLayerLoaded);
+    };
+
     private adjustChartHeight = () => {
         const { chart, chartRef } = this;
 
@@ -412,6 +500,10 @@ class GeoChartRenderer extends React.Component<IGeoChartRendererProps> {
         this.removeLayer(DEFAULT_CLUSTER_LABELS_CONFIG.id);
         if (this.chart.getSource(DEFAULT_DATA_SOURCE_NAME)) {
             this.chart.removeSource(DEFAULT_DATA_SOURCE_NAME);
+        }
+        this.removeLayer(DEFAULT_CHOROPLETH_LAYER_NAME);
+        if (this.chart.getSource(DEFAULT_CHOROPLETH_MAP)) {
+            this.chart.removeSource(DEFAULT_CHOROPLETH_MAP);
         }
     };
 

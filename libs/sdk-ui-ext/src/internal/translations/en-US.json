@@ -664,6 +664,11 @@
         "comment": "Default viewport configuration",
         "limit": 0
     },
+    "properties.isChoroplethMap": {
+        "value": "Choropleth Map",
+        "comment": "Enabled the choropleth map",
+        "limit": 0
+    },
     "properties.viewport.area.auto_default": {
         "value": "Include all data",
         "comment": "All data will be visibled on the map",

@@ -235,6 +235,7 @@ export const GEOPUSHPIN_SUPPORTED_PROPERTIES = [
     "points.maxSize",
     "viewport.area",
     "colorMapping",
+    "isChoroplethMap",
 ];
 
 export const PIVOT_TABLE_SUPPORTED_PROPERTIES = ["columnWidths"];

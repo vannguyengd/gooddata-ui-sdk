@@ -131,6 +131,41 @@ export class GeoChartInner extends React.PureComponent<IGeoChartInnerProps, IGeo
         this.throttledOnWindowResize = throttle(this.onWindowResize, 100);
     }
 
+    public renderChoroplethMapLegend() {
+        return (
+            <div className="choroplet-legend" style={{ display: "block" }}>
+                <h4>Covid-19 Cases:</h4>
+                <div>
+                    <span style={{ backgroundColor: "#BD0426" }}></span>5,000,000
+                </div>
+                <div>
+                    <span style={{ backgroundColor: "#FF0000" }}></span>1,000,000
+                </div>
+                <div>
+                    <span style={{ backgroundColor: "#F50900" }}></span>700,000
+                </div>
+                <div>
+                    <span style={{ backgroundColor: "#F52900" }}></span>500,000
+                </div>
+                <div>
+                    <span style={{ backgroundColor: "#F55100" }}></span>200,000
+                </div>
+                <div>
+                    <span style={{ backgroundColor: "#F57A02" }}></span>100,000
+                </div>
+                <div>
+                    <span style={{ backgroundColor: "#F5A301" }}></span>50,000
+                </div>
+                <div>
+                    <span style={{ backgroundColor: "#F5CC01" }}></span>20,000
+                </div>
+                <div>
+                    <span style={{ backgroundColor: "#F5F502" }}></span>0
+                </div>
+            </div>
+        );
+    }
+
     public componentDidMount(): void {
         this.updateConfigurationPanel(this.props.geoChartOptions);
         window.addEventListener("resize", this.throttledOnWindowResize);
@@ -168,14 +203,19 @@ export class GeoChartInner extends React.PureComponent<IGeoChartInnerProps, IGeo
         measureRef: MeasuredComponentProps["measureRef"] | undefined,
         height: number,
     ): React.ReactElement {
-        const { geoChartOptions: geoChartOptionsProp } = this.props;
+        const { geoChartOptions: geoChartOptionsProp, config } = this.props;
         const geoChartOptions = this.syncWithLegendItemStates(geoChartOptionsProp);
         const position = this.getLegendPosition();
         const classes = this.getContainerClassName(position);
         const isLegendRenderedFirst: boolean =
             position === LegendPosition.TOP ||
             (position === LegendPosition.LEFT && !this.state.showFluidLegend);
-        const legendComponent = this.renderLegend(height, position, geoChartOptions);
+        let legendComponent;
+        if (config?.isChoroplethMap) {
+            legendComponent = this.renderChoroplethMapLegend();
+        } else {
+            legendComponent = this.renderLegend(height, position, geoChartOptions);
+        }
 
         return (
             <div className={classes} ref={measureRef}>

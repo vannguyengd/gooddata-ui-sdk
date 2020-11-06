@@ -173,3 +173,7 @@ export const LAYER_STYLE_LABEL_PREFIX = "-label";
 export const NULL_TOOLTIP_VALUE = "-";
 
 export const ZOOM_CONTROLS_HEIGHT = 100; // zoom control height (60xp) and its margins (20px for top and bottom respectively)
+
+export const DEFAULT_CHOROPLETH_MAP = "gdcChoroplethMap";
+export const DEFAULT_CHOROPLETH_LAYER_NAME = "gdcChoroplethLayer";
+export const DEFAULT_CHOROPLETH_LAYER_BORDER = "gdcChoroplethLayerBorder";

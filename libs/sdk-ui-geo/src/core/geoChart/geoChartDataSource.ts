@@ -149,3 +149,35 @@ export const createPushpinDataSource = (dataSourceProps: IGeoDataSourceProps): m
     }
     return source;
 };
+
+function transformChoroplethMap(data: any): any {
+    const { features } = data;
+    const featuresMapped = features.map((feature: any) => {
+        return {
+            ...feature,
+            properties: {
+                ...feature.properties,
+                segment: {
+                    title: "Country",
+                    value: feature.properties.ADMIN,
+                },
+                size: {
+                    title: "Cases",
+                    value: feature.properties.case,
+                    format: "#,##0",
+                },
+            },
+        };
+    });
+    return {
+        type: "FeatureCollection",
+        features: [...featuresMapped],
+    };
+}
+
+export const createChoroplethDataSource = (data: any): mapboxgl.GeoJSONSourceRaw => {
+    return {
+        type: "geojson",
+        data: transformChoroplethMap(data),
+    };
+};

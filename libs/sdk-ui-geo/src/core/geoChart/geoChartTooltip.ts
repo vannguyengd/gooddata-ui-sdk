@@ -123,44 +123,48 @@ export const handlePushpinMouseEnter = (
     drillableItems?: IHeaderPredicate[],
     intl?: IntlShape,
 ): void => {
-    if (isTooltipDisabled(config)) {
-        return;
+    try {
+        if (isTooltipDisabled(config)) {
+            return;
+        }
+
+        const { separators } = config;
+        const [feature] = e.features;
+        const { properties } = feature;
+        const parsedProps = parseGeoProperties(properties);
+
+        if (!shouldShowTooltip(parsedProps)) {
+            return;
+        }
+
+        chart.getCanvas().style.cursor = "pointer";
+
+        const coordinates = feature.geometry.coordinates.slice();
+        const tooltipStroke = get(parsedProps, "color.background", DEFAULT_PUSHPIN_COLOR_VALUE);
+        const isFullScreenTooltip = isTooltipShownInFullScreen();
+        const chartWidth: number = chart.getCanvas().clientWidth;
+        const maxTooltipContentWidth: number = getTooltipContentWidth(
+            isFullScreenTooltip,
+            chartWidth,
+            TOOLTIP_MAX_WIDTH,
+        );
+        const tooltipHtml = getTooltipHtml(
+            parsedProps,
+            tooltipStroke,
+            maxTooltipContentWidth,
+            separators,
+            drillableItems,
+            intl,
+        );
+        if (coordinates.length === 2) {
+            tooltip.setLngLat(coordinates);
+        } else if (!isNaN(e.lngLat?.lng) && !isNaN(e.lngLat?.lat)) {
+            tooltip.setLngLat([e.lngLat.lng, e.lngLat.lat]);
+        }
+        tooltip.setHTML(tooltipHtml).setMaxWidth(`${maxTooltipContentWidth}px`).addTo(chart);
+    } catch (e) {
+        console.log(e);
     }
-
-    const { separators } = config;
-    const [feature] = e.features;
-    const { properties } = feature;
-    const parsedProps = parseGeoProperties(properties);
-
-    if (!shouldShowTooltip(parsedProps)) {
-        return;
-    }
-
-    chart.getCanvas().style.cursor = "pointer";
-
-    const coordinates = feature.geometry.coordinates.slice();
-    const tooltipStroke = get(parsedProps, "color.background", DEFAULT_PUSHPIN_COLOR_VALUE);
-    const isFullScreenTooltip = isTooltipShownInFullScreen();
-    const chartWidth: number = chart.getCanvas().clientWidth;
-    const maxTooltipContentWidth: number = getTooltipContentWidth(
-        isFullScreenTooltip,
-        chartWidth,
-        TOOLTIP_MAX_WIDTH,
-    );
-    const tooltipHtml = getTooltipHtml(
-        parsedProps,
-        tooltipStroke,
-        maxTooltipContentWidth,
-        separators,
-        drillableItems,
-        intl,
-    );
-
-    tooltip
-        .setLngLat(coordinates)
-        .setHTML(tooltipHtml)
-        .setMaxWidth(`${maxTooltipContentWidth}px`)
-        .addTo(chart);
 };
 
 export const handlePushpinMouseLeave = (

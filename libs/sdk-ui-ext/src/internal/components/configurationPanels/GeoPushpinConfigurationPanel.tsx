@@ -19,6 +19,7 @@ import CheckboxControl from "../configurationControls/CheckboxControl";
 import ConfigSection from "../configurationControls/ConfigSection";
 import PushpinSizeControl from "../configurationControls/PushpinSizeControl";
 import PushpinViewportControl from "../configurationControls/PushpinViewportControl";
+import ChoroplethMapControl from "../configurationControls/ChoroplethMapControl";
 import LegendSection from "../configurationControls/legend/LegendSection";
 import ColorsSection from "../configurationControls/colors/ColorsSection";
 
@@ -60,6 +61,11 @@ export default class GeoPushpinConfigurationPanel extends ConfigurationPanelCont
                 pushData={pushData}
             >
                 <PushpinViewportControl
+                    properties={properties}
+                    disabled={this.isControlDisabled()}
+                    pushData={pushData}
+                />
+                <ChoroplethMapControl
                     properties={properties}
                     disabled={this.isControlDisabled()}
                     pushData={pushData}

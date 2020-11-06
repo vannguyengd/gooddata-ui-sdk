@@ -181,6 +181,7 @@ export interface IGeoConfig {
     colorPalette?: IColorPalette;
     colorMapping?: IColorMapping[];
     showLabels?: boolean;
+    isChoroplethMap?: boolean;
 }
 
 /**
